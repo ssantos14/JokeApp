@@ -4,6 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.VisibleForTesting;
+import android.support.test.espresso.IdlingResource;
+import android.support.test.espresso.idling.CountingIdlingResource;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Pair;
 import android.view.Menu;
@@ -25,7 +30,9 @@ import java.io.IOException;
 public class MainActivity extends AppCompatActivity {
 
     private static final String JOKE_TAG = "joke_intent_tag";
-    //String mJoke;
+    String mJoke;
+    @Nullable
+    private CountingIdlingResource mIdlingResource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,16 +64,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void tellJoke(View view) {
+        if(mIdlingResource != null){
+            mIdlingResource.increment();
+        }
         new EndpointsAsyncTask().execute(new Pair<Context, String>(this, "Manfred"));
-        //new EndpointsAsyncTask().execute(getApplicationContext());
-//        JokeGenerator jokeGenerator = new JokeGenerator();
-//        String joke = jokeGenerator.getJoke();
-//        Intent startJokeActivityIntent = new Intent(this,JokeActivity.class);
-//        startJokeActivityIntent.putExtra(JOKE_TAG,joke);
-//        startActivity(startJokeActivityIntent);
     }
 
-    public class EndpointsAsyncTask extends AsyncTask<Pair<Context, String>, Void, String> {
+    class EndpointsAsyncTask extends AsyncTask<Pair<Context, String>, Void, String> {
         private MyApi myApiService = null;
         private Context context;
 
@@ -102,8 +106,28 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String result) {
-            Toast.makeText(context, result, Toast.LENGTH_LONG).show();
+            mJoke = result;
+            if(mIdlingResource != null){
+                mIdlingResource.decrement();
+            }
+            Intent startJokeActivityIntent = new Intent(getApplicationContext(),JokeActivity.class);
+            startJokeActivityIntent.putExtra(JOKE_TAG,mJoke);
+            startActivity(startJokeActivityIntent);
         }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    public IdlingResource getIdlingResource(){
+        if(mIdlingResource == null){
+            mIdlingResource = new CountingIdlingResource("asynctask_idling_resource");
+        }
+        return mIdlingResource;
+    }
+
+    @VisibleForTesting
+    public String getJoke(){
+        return mJoke;
     }
 
 }
