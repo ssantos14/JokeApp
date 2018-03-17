@@ -47,6 +47,6 @@ dependencies {
     })
 
     testImplementation 'junit:junit:4.12'
-    compile project(':JavaJokeGenerator')
-    compile project(':androidjokedisplay')
+    implementation project(':JavaJokeGenerator')
+    implementation project(':androidjokedisplay')
 }
